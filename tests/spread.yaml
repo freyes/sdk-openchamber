@@ -1,5 +1,5 @@
 project: openchamber-sdk
-path: /root/sdk-openchamber
+path: /home/ubuntu/project
 
 backends:
   lxd:
