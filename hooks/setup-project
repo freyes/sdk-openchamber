@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# setup-project: configure OpenChamber as a systemd user service.
+# Runs as the workshop user. Must be idempotent.
+
+echo "[openchamber-sdk] setup-project: configuring OpenChamber service"
+
+PASSWORD_FILE="/project/.openchamber-password"
+
+# Generate or reuse the UI password.
+if [ -s "$PASSWORD_FILE" ]; then
+  echo "[openchamber-sdk] Reusing existing password from $PASSWORD_FILE"
+elif [ -f "$PASSWORD_FILE" ]; then
+  # File exists but is empty — treat as missing and regenerate.
+  echo "[openchamber-sdk] Password file exists but is empty — regenerating"
+  openssl rand -hex 16 > "$PASSWORD_FILE"
+  chmod 600 "$PASSWORD_FILE"
+else
+  echo "[openchamber-sdk] Generating new password to $PASSWORD_FILE"
+  openssl rand -hex 16 > "$PASSWORD_FILE"
+  chmod 600 "$PASSWORD_FILE"
+fi
+
+PASSWORD=$(cat "$PASSWORD_FILE")
+
+# Prevent accidental git commit of the password file.
+GITIGNORE="/project/.gitignore"
+if [ -f "$GITIGNORE" ]; then
+  grep -qxF '.openchamber-password' "$GITIGNORE" || echo '.openchamber-password' >> "$GITIGNORE"
+else
+  echo '.openchamber-password' > "$GITIGNORE"
+fi
+
+# Run openchamber startup enable to create the systemd user unit.
+echo "[openchamber-sdk] Running openchamber startup enable"
+openchamber startup enable \
+  --port 3000 \
+  --host 0.0.0.0 \
+  --ui-password "$PASSWORD"
+
+# Patch WorkingDirectory from $HOME to /project.
+UNIT_FILE="$HOME/.config/systemd/user/openchamber.service"
+if [ -f "$UNIT_FILE" ]; then
+  echo "[openchamber-sdk] Patching WorkingDirectory to /project"
+  sed -i 's|^WorkingDirectory=.*|WorkingDirectory=/project|' "$UNIT_FILE"
+fi
+
+# Reload systemd and restart the service so the new WorkingDirectory takes effect.
+systemctl --user daemon-reload
+systemctl --user restart openchamber.service 2>/dev/null || \
+  systemctl --user start openchamber.service
+
+# Verify the service is running.
+if systemctl --user is-active openchamber.service >/dev/null 2>&1; then
+  echo "[openchamber-sdk] openchamber.service is active"
+else
+  echo "[openchamber-sdk] WARNING: openchamber.service is not active"
+fi
+
+echo "[openchamber-sdk] setup-project complete"

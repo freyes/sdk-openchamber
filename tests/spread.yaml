@@ -1,0 +1,4 @@
+suite: sdk-openchamber-sdk
+systems:
+  - ubuntu-24.04
+  - ubuntu-26.04

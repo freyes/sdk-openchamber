@@ -1,0 +1,28 @@
+name: openchamber-sdk
+version: "1.0.0"
+summary: OpenChamber workshop SDK
+description: |
+  Installs the openchamber snap and configures OpenChamber as a systemd user
+  service inside a workshop container. Auto-generates a UI password stored
+  under /project and enables the service to start on boot via linger.
+
+  Requires the `opencode` SDK to be included in the workshop.yaml for
+  OpenCode (the agent engine OpenChamber depends on).
+
+license: MIT
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+
+platforms:
+  build-on: [amd64]
+  build-for:
+    - ubuntu@24.04:amd64
+    - ubuntu@26.04:amd64
+
+plugs:
+  openchamber-config:
+    interface: mount
+    workshop-target: /home/workshop/.config/openchamber
+  openchamber-data:
+    interface: mount
+    workshop-target: /home/workshop/.local/share/openchamber

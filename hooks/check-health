@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# check-health: verify the openchamber binary and systemd service.
+# Runs as root. Reports status via workshopctl set-health.
+
+HEALTH_CODE="openchamber"
+
+# Verify the openchamber binary is available.
+if ! command -v openchamber &>/dev/null; then
+  workshopctl set-health --code="$HEALTH_CODE" error "openchamber binary not found on PATH"
+  exit 1
+fi
+
+if ! openchamber --version &>/dev/null; then
+  workshopctl set-health --code="$HEALTH_CODE" error "openchamber --version failed"
+  exit 1
+fi
+
+# Check the systemd user service. check-health runs as root but systemd user
+# services live in the workshop user's bus — pass XDG_RUNTIME_DIR explicitly.
+WORKSHOP_RUNTIME="/run/user/1000"
+if ! sudo -u workshop XDG_RUNTIME_DIR="$WORKSHOP_RUNTIME" \
+    systemctl --user is-active openchamber.service &>/dev/null; then
+  workshopctl set-health --code="$HEALTH_CODE" error "openchamber.service is not active"
+  exit 1
+fi
+
+workshopctl set-health --code="$HEALTH_CODE" okay
+exit 0
