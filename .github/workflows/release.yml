@@ -1,13 +1,15 @@
 name: Release to latest/edge
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Build and test"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   release:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
