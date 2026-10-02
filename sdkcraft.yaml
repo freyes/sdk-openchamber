@@ -10,14 +10,9 @@ description: |
   OpenCode (the agent engine OpenChamber depends on).
 
 license: MIT
-base: ubuntu@24.04
-build-base: ubuntu@24.04
-
 platforms:
-  build-on: [amd64]
-  build-for:
-    - ubuntu@24.04:amd64
-    - ubuntu@26.04:amd64
+  ubuntu@24.04:amd64:
+  ubuntu@26.04:amd64:
 
 plugs:
   openchamber-config:
