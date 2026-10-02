@@ -3,7 +3,7 @@ summary: Launch workshop with openchamber-sdk and verify service configuration
 prepare: |
   echo "==> Create workshop.yaml referencing openchamber-sdk"
   envsubst '${BASE}' <workshop.yaml.in >workshop.yaml
-  workshop launch
+  workshop launch --verbose
 
 
 restore: |

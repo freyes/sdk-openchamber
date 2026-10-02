@@ -1,2 +1,4 @@
 .omo/
 *.sdk
+tests/.spread-reuse.yaml
+tests/.craft-spread-*
