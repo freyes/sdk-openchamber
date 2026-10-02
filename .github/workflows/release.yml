@@ -14,24 +14,16 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Download SDK artifacts
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build-and-test.yml
+          workflow_conclusion: success
+          name: sdk-files
+          path: dist
 
       - name: Install sdkcraft
         run: sudo snap install sdkcraft --classic
-
-      - uses: canonical/setup-lxd@main
-        with:
-          group: lxd
-
-      - name: Add user to lxd group
-        run: |
-          sudo usermod -aG lxd $USER
-
-      - name: Pack SDK
-        run: |
-          mkdir -p dist
-          sg lxd -c "sdkcraft pack -v -o dist"
 
       - name: Upload and release to latest/edge
         env:

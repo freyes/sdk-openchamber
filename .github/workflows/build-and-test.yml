@@ -36,5 +36,12 @@ jobs:
       - name: Pack SDK
         run: sg lxd -c 'sdkcraft pack -v'
 
+      - name: Upload SDK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-files
+          path: "*.sdk"
+          if-no-files-found: error
+
       - name: Test SDK
         run: sg lxd -c 'sdkcraft test -v'
