@@ -9,12 +9,12 @@ echo "[openchamber-sdk] setup-base: installing openchamber snap"
 # Try installing from the local path (env var) first, then the Snap Store.
 if [ -n "${OPENCHAMBER_SNAP_PATH:-}" ] && [ -f "$OPENCHAMBER_SNAP_PATH" ]; then
   echo "[openchamber-sdk] Installing from $OPENCHAMBER_SNAP_PATH"
-  snap install --classic --dangerous "$OPENCHAMBER_SNAP_PATH"
+  snap install --dangerous "$OPENCHAMBER_SNAP_PATH"
 elif snap list openchamber &>/dev/null; then
   echo "[openchamber-sdk] openchamber snap already installed"
 else
   echo "[openchamber-sdk] Installing openchamber from the Snap Store"
-  snap install openchamber --classic
+  snap install openchamber
 fi
 
 # Enable linger so the user systemd service starts on boot without login.
