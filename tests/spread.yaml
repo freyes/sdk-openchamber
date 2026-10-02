@@ -1,5 +1,11 @@
 project: openchamber-sdk
-suite: sdk-openchamber-sdk
-systems:
-  - ubuntu-24.04
-  - ubuntu-26.04
+
+backends:
+  lxd:
+    systems:
+      - ubuntu-24.04
+      - ubuntu-26.04
+
+suites:
+  tests/main/launch/:
+    summary: Launch workshop with openchamber-sdk and verify service configuration
