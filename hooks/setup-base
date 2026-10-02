@@ -26,4 +26,33 @@ cat > /etc/profile.d/openchamber.sh <<'PROFILE'
 export PATH="/snap/bin:$PATH"
 PROFILE
 
+# Install OpenCode systemd user unit (global location for all users).
+echo "[openchamber-sdk] Installing opencode systemd user unit"
+
+mkdir -p /etc/systemd/user
+
+cat > /etc/systemd/user/openchamber-opencode.service <<'UNIT'
+[Unit]
+Description=OpenCode Agent Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/project
+ExecStart=/snap/bin/opencode serve --hostname 127.0.0.1 --port 2018
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+UNIT
+
+# Reload, enable, and start the service as the workshop user.
+sudo -u workshop XDG_RUNTIME_DIR=/run/user/1000 systemctl --user daemon-reload
+sudo -u workshop XDG_RUNTIME_DIR=/run/user/1000 systemctl --user enable openchamber-opencode.service
+sudo -u workshop XDG_RUNTIME_DIR=/run/user/1000 systemctl --user start openchamber-opencode.service
+
+echo "[openchamber-sdk] openchamber-opencode.service installed and started"
+
 echo "[openchamber-sdk] setup-base complete"

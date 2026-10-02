@@ -32,7 +32,12 @@ else
   echo '.openchamber-password' > "$GITIGNORE"
 fi
 
+# Point OpenChamber to the OpenCode server running on the same host.
+export OPENCODE_HOST="http://127.0.0.1:2018"
+export OPENCODE_SKIP_START=true
+
 # Run openchamber startup enable to create the systemd user unit.
+# The env vars above are snapshotted into the service's environment.
 echo "[openchamber-sdk] Running openchamber startup enable"
 openchamber startup enable \
   --port 3000 \
@@ -44,6 +49,9 @@ UNIT_FILE="$HOME/.config/systemd/user/openchamber.service"
 if [ -f "$UNIT_FILE" ]; then
   echo "[openchamber-sdk] Patching WorkingDirectory to /project"
   sed -i 's|^WorkingDirectory=.*|WorkingDirectory=/project|' "$UNIT_FILE"
+
+  echo "[openchamber-sdk] Adding Wants dependency on openchamber-opencode"
+  sed -i '/^\[Unit\]/a Wants=openchamber-opencode.service' "$UNIT_FILE"
 fi
 
 # Reload systemd and restart the service so the new WorkingDirectory takes effect.
