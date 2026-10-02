@@ -1,5 +1,5 @@
 name: openchamber-sdk-test
-base: {{base}}
+base: ${BASE}
 sdks:
   - name: opencode
   - name: try-openchamber-sdk

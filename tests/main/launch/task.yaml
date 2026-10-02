@@ -1,0 +1,29 @@
+summary: Launch workshop with openchamber-sdk and verify service configuration
+
+prepare: |
+  echo "==> Create workshop.yaml referencing openchamber-sdk"
+  envsubst '${BASE}' <workshop.yaml.in >workshop.yaml
+  workshop launch
+
+
+restore: |
+  workshop remove || true
+
+
+execute: |
+  set -eux
+
+  echo "==> Verify openchamber.service is active"
+  workshop exec -- systemctl --user is-active openchamber.service
+
+  echo "==> Verify password file exists and is non-empty"
+  workshop exec -- test -f /project/.openchamber-password
+  workshop exec -- test -s /project/.openchamber-password
+
+  echo "==> Verify WorkingDirectory is patched to /project"
+  workshop exec -- grep -q 'WorkingDirectory=/project' ~/.config/systemd/user/openchamber.service
+
+  echo "==> Verify service listens on 0.0.0.0:3000"
+  workshop exec -- ss -tlnp | grep -q '0.0.0.0:3000'
+
+  echo "==> All checks passed"

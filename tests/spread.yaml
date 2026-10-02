@@ -4,9 +4,13 @@ path: /root/sdk-openchamber
 backends:
   lxd:
     systems:
-      - ubuntu-24.04
-      - ubuntu-26.04
+      - ubuntu-24.04:
+          username: ubuntu
+          vm: true
 
 suites:
-  main/launch/:
+  main/:
     summary: Launch workshop with openchamber-sdk and verify service configuration
+    environment:
+      BASE/noble: ubuntu@24.04
+      BASE/resolute: ubuntu@26.04
