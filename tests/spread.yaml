@@ -1,3 +1,4 @@
+project: openchamber-sdk
 suite: sdk-openchamber-sdk
 systems:
   - ubuntu-24.04
