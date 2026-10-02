@@ -1,4 +1,5 @@
 project: openchamber-sdk
+path: /root/sdk-openchamber
 
 backends:
   lxd:
@@ -7,5 +8,5 @@ backends:
       - ubuntu-26.04
 
 suites:
-  tests/main/launch/:
+  main/launch/:
     summary: Launch workshop with openchamber-sdk and verify service configuration
