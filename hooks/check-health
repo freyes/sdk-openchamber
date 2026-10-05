@@ -26,5 +26,5 @@ if ! sudo -u workshop XDG_RUNTIME_DIR="$WORKSHOP_RUNTIME" \
   exit 1
 fi
 
-workshopctl set-health --code="$HEALTH_CODE" okay
+workshopctl set-health okay
 exit 0
