@@ -32,27 +32,35 @@ else
   echo '.openchamber-password' > "$GITIGNORE"
 fi
 
-# Point OpenChamber to the OpenCode server running on the same host.
-export OPENCODE_HOST="http://127.0.0.1:2018"
-export OPENCODE_SKIP_START=true
-
-# Run openchamber startup enable to create the systemd user unit.
-# The env vars above are snapshotted into the service's environment.
-echo "[openchamber-sdk] Running openchamber startup enable"
-openchamber startup enable \
-  --port 3000 \
-  --host 0.0.0.0 \
-  --ui-password "$PASSWORD"
-
-# Patch WorkingDirectory from $HOME to /project.
+# Write the systemd user unit directly instead of calling openchamber startup enable.
+# This avoids a runtime dependency on the openchamber CLI for service creation and
+# gives us full control over the unit file contents.
+OPENCODE_PORT="2018"
+OPENCHAMBER_PORT="3000"
 UNIT_FILE="$HOME/.config/systemd/user/openchamber.service"
-if [ -f "$UNIT_FILE" ]; then
-  echo "[openchamber-sdk] Patching WorkingDirectory to /project"
-  sed -i 's|^WorkingDirectory=.*|WorkingDirectory=/project|' "$UNIT_FILE"
 
-  echo "[openchamber-sdk] Adding Wants dependency on openchamber-opencode"
-  sed -i '/^\[Unit\]/a Wants=openchamber-opencode.service' "$UNIT_FILE"
-fi
+echo "[openchamber-sdk] Creating openchamber systemd user unit"
+mkdir -p "$(dirname "$UNIT_FILE")"
+
+cat > "$UNIT_FILE" <<SYSTEMD_UNIT
+[Unit]
+Description=OpenChamber web server
+After=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/home/workshop/.config/openchamber/startup.env
+Environment=OPENCODE_SKIP_START=1
+Environment=OPENCODE_HOST=127.0.0.1
+Environment=OPENCODE_PORT=${OPENCODE_PORT}
+ExecStart=/snap/bin/openchamber serve --foreground --port ${OPENCHAMBER_PORT} --lan --ui-password ${PASSWORD}
+WorkingDirectory=/project
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+SYSTEMD_UNIT
 
 # Reload systemd and restart the service so the new WorkingDirectory takes effect.
 systemctl --user daemon-reload

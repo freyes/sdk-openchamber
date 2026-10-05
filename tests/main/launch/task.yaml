@@ -20,7 +20,7 @@ execute: |
   workshop exec -- test -f /project/.openchamber-password
   workshop exec -- test -s /project/.openchamber-password
 
-  echo "==> Verify WorkingDirectory is patched to /project"
+  echo "==> Verify WorkingDirectory is set to /project"
   workshop exec -- grep -q 'WorkingDirectory=/project' ~/.config/systemd/user/openchamber.service
 
   echo "==> Verify service listens on 0.0.0.0:3000"

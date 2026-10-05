@@ -57,9 +57,11 @@ workshop launch workshop.yaml
 ### setup-project (runs as workshop user)
 1. Reads or generates a 32-character hex password in `/project/.openchamber-password`.
 2. Adds `.openchamber-password` to `/project/.gitignore` to prevent accidental commits.
-3. Runs `openchamber startup enable --host 0.0.0.0 --ui-password <pw>`.
-4. Patches `WorkingDirectory` from `$HOME` to `/project` in the generated unit file.
-5. Reloads systemd and restarts the service.
+3. Creates `~/.config/systemd/user/openchamber.service` from a template — the service
+   runs `/snap/bin/openchamber serve --foreground --port 3000 --lan` with the
+   generated UI password, connects to the OpenCode agent on `127.0.0.1:2018`, and
+   loads optional overrides from `/home/workshop/.config/openchamber/startup.env`.
+4. Reloads systemd and restarts the service.
 
 ### check-health (runs as root)
 1. Verifies the `openchamber` binary is on PATH.
