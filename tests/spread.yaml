@@ -1,4 +1,4 @@
-project: openchamber-sdk
+project: openchamber
 path: /home/ubuntu/project
 
 backends:
@@ -10,7 +10,7 @@ backends:
 
 suites:
   main/:
-    summary: Launch workshop with openchamber-sdk and verify service configuration
+    summary: Launch workshop with openchamber and verify service configuration
     environment:
       BASE/noble: ubuntu@24.04
       BASE/resolute: ubuntu@26.04

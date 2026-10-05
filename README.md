@@ -19,7 +19,7 @@ base: ubuntu@26.04
 sdks:
   - name: direnvrc
   - name: opencode          # REQUIRED: agent engine
-  - name: try-openchamber-sdk
+  - name: try-openchamber
 ```
 
 ## Build
@@ -28,7 +28,7 @@ sdks:
 sdkcraft pack
 ```
 
-This produces `openchamber-sdk_amd64.sdk`. The SDK ships hook scripts only — no
+This produces `openchamber_amd64.sdk`. The SDK ships hook scripts only — no
 binary payload. The `openchamber` snap is installed at runtime (setup-base).
 
 Supported bases: **ubuntu@24.04** and **ubuntu@26.04**.
@@ -39,7 +39,7 @@ Supported bases: **ubuntu@24.04** and **ubuntu@26.04**.
 sdkcraft try
 ```
 
-Then reference it as `try-openchamber-sdk` in your `workshop.yaml` and launch:
+Then reference it as `try-openchamber` in your `workshop.yaml` and launch:
 
 ```bash
 workshop launch workshop.yaml

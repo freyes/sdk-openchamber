@@ -1,7 +1,7 @@
-summary: Launch workshop with openchamber-sdk and verify service configuration
+summary: Launch workshop with openchamber and verify service configuration
 
 prepare: |
-  echo "==> Create workshop.yaml referencing openchamber-sdk"
+  echo "==> Create workshop.yaml referencing openchamber"
   envsubst '${BASE}' <workshop.yaml.in >workshop.yaml
   workshop launch --verbose
 

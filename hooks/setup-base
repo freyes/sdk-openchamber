@@ -4,21 +4,21 @@ set -euo pipefail
 # setup-base: install the openchamber snap and enable user linger.
 # Runs as root. Must be idempotent.
 
-echo "[openchamber-sdk] setup-base: installing openchamber snap"
+echo "[openchamber] setup-base: installing openchamber snap"
 
 # Try installing from the local path (env var) first, then the Snap Store.
 if [ -n "${OPENCHAMBER_SNAP_PATH:-}" ] && [ -f "$OPENCHAMBER_SNAP_PATH" ]; then
-  echo "[openchamber-sdk] Installing from $OPENCHAMBER_SNAP_PATH"
+  echo "[openchamber] Installing from $OPENCHAMBER_SNAP_PATH"
   snap install --dangerous "$OPENCHAMBER_SNAP_PATH"
 elif snap list openchamber &>/dev/null; then
-  echo "[openchamber-sdk] openchamber snap already installed"
+  echo "[openchamber] openchamber snap already installed"
 else
-  echo "[openchamber-sdk] Installing openchamber from the Snap Store"
+  echo "[openchamber] Installing openchamber from the Snap Store"
   snap install --edge openchamber
 fi
 
 # Enable linger so the user systemd service starts on boot without login.
-echo "[openchamber-sdk] Enabling linger for workshop user"
+echo "[openchamber] Enabling linger for workshop user"
 loginctl enable-linger workshop
 
 # Make /snap/bin available in interactive shells.
@@ -27,7 +27,7 @@ export PATH="/snap/bin:$PATH"
 PROFILE
 
 # Install OpenCode systemd user unit (global location for all users).
-echo "[openchamber-sdk] Installing opencode systemd user unit"
+echo "[openchamber] Installing opencode systemd user unit"
 
 mkdir -p /etc/systemd/user
 
@@ -53,6 +53,6 @@ sudo -u workshop XDG_RUNTIME_DIR=/run/user/1000 systemctl --user daemon-reload
 sudo -u workshop XDG_RUNTIME_DIR=/run/user/1000 systemctl --user enable openchamber-opencode.service
 sudo -u workshop XDG_RUNTIME_DIR=/run/user/1000 systemctl --user start openchamber-opencode.service
 
-echo "[openchamber-sdk] openchamber-opencode.service installed and started"
+echo "[openchamber] openchamber-opencode.service installed and started"
 
-echo "[openchamber-sdk] setup-base complete"
+echo "[openchamber] setup-base complete"
