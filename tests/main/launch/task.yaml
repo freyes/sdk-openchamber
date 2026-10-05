@@ -21,7 +21,7 @@ execute: |
   workshop exec -- test -s /project/.openchamber-password
 
   echo "==> Verify WorkingDirectory is set to /project"
-  workshop exec -- grep -q 'WorkingDirectory=/project' ~/.config/systemd/user/openchamber.service
+  workshop exec -- sudo -u workshop grep -q 'WorkingDirectory=/project' /home/workshop/.config/systemd/user/openchamber.service
 
   echo "==> Verify service listens on 0.0.0.0:3000"
   workshop exec -- ss -tlnp | grep -q '0.0.0.0:3000'
