@@ -26,6 +26,44 @@ cat > /etc/profile.d/openchamber.sh <<'PROFILE'
 export PATH="/snap/bin:$PATH"
 PROFILE
 
+# Install the helper that applies memory limits to the OpenCode service.
+# systemd does not expand environment variables in MemoryMax=/MemoryHigh=, so
+# the helper sources /project/openchamber-env.sh (if present) and applies
+# OPENCODE_MEM_MAX / OPENCODE_MEM_HIGH via `systemctl set-property --runtime`.
+# Unset values reset the limit to "infinity", so removing a variable takes
+# effect on the next restart.
+echo "[openchamber] Installing opencode memory limits helper"
+
+mkdir -p /usr/local/lib/openchamber
+
+cat > /usr/local/lib/openchamber/opencode-memory-limits <<'HELPER'
+#!/usr/bin/env bash
+set -euo pipefail
+
+ENV_FILE="/project/openchamber-env.sh"
+UNIT="openchamber-opencode.service"
+
+mem_max=""
+mem_high=""
+if [ -r "$ENV_FILE" ]; then
+  # Source in a subshell so the file cannot alter this script's state.
+  { read -r mem_max; read -r mem_high; } < <(
+    # shellcheck source=/dev/null
+    . "$ENV_FILE" >/dev/null
+    printf '%s\n%s\n' "${OPENCODE_MEM_MAX:-}" "${OPENCODE_MEM_HIGH:-}"
+  )
+fi
+
+mem_max="${mem_max:-infinity}"
+mem_high="${mem_high:-infinity}"
+
+echo "[openchamber] Applying MemoryMax=$mem_max MemoryHigh=$mem_high to $UNIT"
+exec systemctl --user set-property --runtime "$UNIT" \
+  "MemoryMax=$mem_max" "MemoryHigh=$mem_high"
+HELPER
+
+chmod 755 /usr/local/lib/openchamber/opencode-memory-limits
+
 # Install OpenCode systemd user unit (global location for all users).
 echo "[openchamber] Installing opencode systemd user unit"
 
@@ -40,7 +78,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=/project
-ExecStart=/snap/bin/opencode serve --hostname 127.0.0.1 --port 2018
+ExecStartPre=-/usr/local/lib/openchamber/opencode-memory-limits
+ExecStart=/var/lib/workshop/sdk/opencode/bin/opencode serve --hostname 127.0.0.1 --port 2018
 Restart=on-failure
 RestartSec=5
 

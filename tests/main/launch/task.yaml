@@ -10,6 +10,11 @@ restore: |
   workshop remove || true
 
 
+debug: |
+  workshop exec -- systemctl --user status --no-pager openchamber-opencode.service || true
+  workshop exec -- journalctl --user --no-pager -n 100 -u openchamber-opencode.service || true
+
+
 execute: |
   set -eux
 
@@ -25,5 +30,18 @@ execute: |
 
   echo "==> Verify service listens on 0.0.0.0:3000"
   workshop exec -- ss -tlnp | grep -q '0.0.0.0:3000'
+
+  echo "==> Verify memory limits from /project/openchamber-env.sh are applied"
+  workshop exec -- bash -c 'printf "OPENCODE_MEM_MAX=1G\nOPENCODE_MEM_HIGH=768M\n" > /project/openchamber-env.sh'
+  workshop exec -- systemctl --user restart openchamber-opencode.service
+  workshop exec -- systemctl --user show -p MemoryMax --value openchamber-opencode.service | grep -qx 1073741824
+  workshop exec -- systemctl --user show -p MemoryHigh --value openchamber-opencode.service | grep -qx 805306368
+  workshop exec -- systemctl --user is-active openchamber-opencode.service
+
+  echo "==> Verify memory limits reset when the env file is removed"
+  workshop exec -- rm -f /project/openchamber-env.sh
+  workshop exec -- systemctl --user restart openchamber-opencode.service
+  workshop exec -- systemctl --user show -p MemoryMax --value openchamber-opencode.service | grep -qx infinity
+  workshop exec -- systemctl --user show -p MemoryHigh --value openchamber-opencode.service | grep -qx infinity
 
   echo "==> All checks passed"
