@@ -53,6 +53,30 @@ workshop launch workshop.yaml
 2. Enables linger for the `workshop` user so the systemd user service starts on
    boot.
 3. Writes `/etc/profile.d/openchamber.sh` for PATH access in interactive shells.
+4. Installs and starts the `openchamber-opencode.service` systemd user unit
+   (`opencode serve` on `127.0.0.1:2018`).
+
+### OpenCode memory limits
+
+Before each start of `openchamber-opencode.service`, the SDK sources
+`/project/openchamber-env.sh` (if it exists) and applies these variables to the
+unit's cgroup:
+
+| Variable | systemd property |
+|---|---|
+| `OPENCODE_MEM_MAX` | `MemoryMax` |
+| `OPENCODE_MEM_HIGH` | `MemoryHigh` |
+
+Values use systemd syntax (e.g. `2G`, `1536M`, `80%`, `infinity`). Unset
+variables mean no limit. Example:
+
+```bash
+# /project/openchamber-env.sh
+OPENCODE_MEM_MAX=4G
+OPENCODE_MEM_HIGH=3G
+```
+
+Apply changes with `systemctl --user restart openchamber-opencode.service`.
 
 ### setup-project (runs as workshop user)
 1. Reads or generates a 32-character hex password in `/project/.openchamber-password`.
