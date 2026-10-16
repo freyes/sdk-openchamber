@@ -79,7 +79,7 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=/project
 ExecStartPre=-/usr/local/lib/openchamber/opencode-memory-limits
-ExecStart=/snap/bin/opencode serve --hostname 127.0.0.1 --port 2018
+ExecStart=/var/lib/workshop/sdk/opencode/bin/opencode serve --hostname 127.0.0.1 --port 2018
 Restart=on-failure
 RestartSec=5
 
