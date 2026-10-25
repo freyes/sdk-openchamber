@@ -6,10 +6,32 @@ set -euo pipefail
 
 echo "[openchamber] setup-base: installing openchamber snap"
 
-# Try installing from the local path (env var) first, then the Snap Store.
+# Install a local snap file. Locally built snaps may use classic confinement,
+# so retry with --classic when snapd requires it.
+install_local_snap() {
+  local snap_file="$1" output
+  echo "[openchamber] Installing from $snap_file"
+  if output=$(snap install --dangerous "$snap_file" 2>&1); then
+    echo "$output"
+  elif grep -qi "classic confinement" <<<"$output"; then
+    echo "[openchamber] Snap requires classic confinement, retrying with --classic"
+    snap install --dangerous --classic "$snap_file"
+  else
+    echo "$output" >&2
+    return 1
+  fi
+}
+
+# Prefer a locally built snap in /project (newest version wins).
+LOCAL_SNAP=$(find /project -maxdepth 1 -type f -name 'openchamber_*.snap' 2>/dev/null \
+  | sort -V | tail -n 1)
+
+# Order: $OPENCHAMBER_SNAP_PATH, local snap in /project, already installed,
+# then the Snap Store.
 if [ -n "${OPENCHAMBER_SNAP_PATH:-}" ] && [ -f "$OPENCHAMBER_SNAP_PATH" ]; then
-  echo "[openchamber] Installing from $OPENCHAMBER_SNAP_PATH"
-  snap install --dangerous "$OPENCHAMBER_SNAP_PATH"
+  install_local_snap "$OPENCHAMBER_SNAP_PATH"
+elif [ -n "$LOCAL_SNAP" ]; then
+  install_local_snap "$LOCAL_SNAP"
 elif snap list openchamber &>/dev/null; then
   echo "[openchamber] openchamber snap already installed"
 else
