@@ -48,8 +48,11 @@ workshop launch workshop.yaml
 ## What the SDK Does
 
 ### setup-base (runs as root, once per revision)
-1. Installs the `openchamber` snap from `$OPENCHAMBER_SNAP_PATH` (if set) or the
-   Snap Store.
+1. Installs the `openchamber` snap, in order of preference: from
+   `$OPENCHAMBER_SNAP_PATH` (if set), from a locally built
+   `/project/openchamber_*.snap` (newest version if several), or from the Snap
+   Store. Local snaps are installed with `--dangerous`, retrying with
+   `--classic` if the snap uses classic confinement.
 2. Enables linger for the `workshop` user so the systemd user service starts on
    boot.
 3. Writes `/etc/profile.d/openchamber.sh` for PATH access in interactive shells.
