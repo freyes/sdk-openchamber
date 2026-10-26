@@ -31,7 +31,16 @@ execute: |
   workshop exec -- sudo -u workshop grep -q 'WorkingDirectory=/project' /home/workshop/.config/systemd/user/openchamber.service
 
   echo "==> Verify service listens on 0.0.0.0:3000"
-  retry -n 20 --wait 1 sh -c "workshop exec -- ss -tlnp | grep -q '0.0.0.0:3000'"
+  # The server may still be starting right after launch; poll for up to 30s.
+  listening=false
+  for _ in $(seq 30); do
+    if workshop exec -- ss -tlnp | grep -q '0.0.0.0:3000'; then
+      listening=true
+      break
+    fi
+    sleep 1
+  done
+  "$listening"
 
   echo "==> Verify memory limits from /project/openchamber-env.sh are applied"
   workshop exec -- bash -c 'printf "OPENCODE_MEM_MAX=1G\nOPENCODE_MEM_HIGH=768M\n" > /project/openchamber-env.sh'
