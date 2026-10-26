@@ -11,6 +11,10 @@ backends:
 suites:
   main/:
     summary: Launch workshop with openchamber and verify service configuration
+    prepare: |
+      # `retry` is used by the tests to poll for the service to come up.
+      apt-get update
+      apt-get install -y retry
     environment:
       BASE/noble: ubuntu@24.04
       BASE/resolute: ubuntu@26.04
