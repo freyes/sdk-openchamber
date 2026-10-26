@@ -22,12 +22,54 @@ install_local_snap() {
   fi
 }
 
+# TEMPORARY: the openchamber snap in the Snap Store does not support classic
+# confinement yet, so install the newest build (releases[0], pre-releases
+# included) published at https://github.com/freyes/snap-openchamber/releases.
+# Remove this (and restore `snap install --edge openchamber` below) once the
+# Store snap supports classic confinement.
+RELEASES_API="https://api.github.com/repos/freyes/snap-openchamber/releases?per_page=1"
+
+install_release_snap() {
+  local arch json url digest tmp
+  arch=$(dpkg --print-architecture)
+
+  echo "[openchamber] Querying $RELEASES_API"
+  json=$(curl -fsSL --retry 3 "$RELEASES_API")
+
+  # Assets are listed as name, digest, ..., browser_download_url per asset.
+  read -r url digest < <(awk -v arch="$arch" '
+    /"digest":/ { d = $2; gsub(/[",]/, "", d) }
+    /"browser_download_url":/ {
+      u = $2; gsub(/[",]/, "", u)
+      if (u ~ ("_" arch "\\.snap$")) { print u, d; exit }
+    }' <<<"$json")
+
+  if [ -z "${url:-}" ]; then
+    echo "[openchamber] No $arch .snap asset in the latest release" >&2
+    return 1
+  fi
+
+  tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' RETURN
+  echo "[openchamber] Downloading $url"
+  curl -fsSL --retry 3 -o "$tmp/openchamber.snap" "$url"
+
+  # GitHub exposes the asset checksum as "sha256:<hex>"; verify when present.
+  if [[ "${digest:-}" == sha256:* ]]; then
+    echo "${digest#sha256:}  $tmp/openchamber.snap" | sha256sum -c -
+  else
+    echo "[openchamber] WARNING: release asset has no sha256 digest, skipping verification" >&2
+  fi
+
+  install_local_snap "$tmp/openchamber.snap"
+}
+
 # Prefer a locally built snap in /project (newest version wins).
 LOCAL_SNAP=$(find /project -maxdepth 1 -type f -name 'openchamber_*.snap' 2>/dev/null \
   | sort -V | tail -n 1)
 
 # Order: $OPENCHAMBER_SNAP_PATH, local snap in /project, already installed,
-# then the Snap Store.
+# then the latest GitHub release (temporary replacement for the Snap Store).
 if [ -n "${OPENCHAMBER_SNAP_PATH:-}" ] && [ -f "$OPENCHAMBER_SNAP_PATH" ]; then
   install_local_snap "$OPENCHAMBER_SNAP_PATH"
 elif [ -n "$LOCAL_SNAP" ]; then
@@ -35,8 +77,8 @@ elif [ -n "$LOCAL_SNAP" ]; then
 elif snap list openchamber &>/dev/null; then
   echo "[openchamber] openchamber snap already installed"
 else
-  echo "[openchamber] Installing openchamber from the Snap Store"
-  snap install --edge openchamber
+  echo "[openchamber] Installing openchamber from the latest GitHub release"
+  install_release_snap
 fi
 
 # Enable linger so the user systemd service starts on boot without login.

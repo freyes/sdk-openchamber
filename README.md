@@ -4,6 +4,25 @@ Configures OpenChamber as a systemd user service inside a workshop container.
 On launch, it installs the `openchamber` snap, auto-generates a UI password,
 and starts the web server on `0.0.0.0:3000`.
 
+> [!WARNING]
+> **The `openchamber` snap is NOT installed from the Snap Store.**
+> The Store snap does not support classic confinement yet, so, until it does,
+> `setup-base` downloads the newest build (including pre-releases) from
+> <https://github.com/freyes/snap-openchamber/releases> and installs it with
+> `snap install --dangerous --classic`. This means:
+>
+> - The snap is **unsigned and unasserted** (`--dangerous`), and it is
+>   **classic-confined**, i.e. it runs with full access to the system.
+>   Only use this SDK if you trust that GitHub repository.
+> - The snap **does not auto-refresh** from the Store. It is only (re)installed
+>   when `setup-base` runs and no snap is installed yet.
+> - `setup-base` needs network access to `api.github.com` and `github.com`.
+>   The downloaded file is verified against the SHA-256 digest published by
+>   GitHub for the release asset.
+>
+> This is a temporary workaround. It will be reverted to `snap install openchamber`
+> once the Store snap supports classic confinement.
+
 ## Prerequisites
 
 **The `opencode` SDK MUST be included in your `workshop.yaml` before this SDK.**
@@ -50,9 +69,12 @@ workshop launch workshop.yaml
 ### setup-base (runs as root, once per revision)
 1. Installs the `openchamber` snap, in order of preference: from
    `$OPENCHAMBER_SNAP_PATH` (if set), from a locally built
-   `/project/openchamber_*.snap` (newest version if several), or from the Snap
-   Store. Local snaps are installed with `--dangerous`, retrying with
-   `--classic` if the snap uses classic confinement.
+   `/project/openchamber_*.snap` (newest version if several), if already
+   installed, keeps it, or else from the latest
+   [GitHub release](https://github.com/freyes/snap-openchamber/releases)
+   (temporary, see the warning above; the Snap Store is not used). Local and
+   release snaps are installed with `--dangerous`, retrying with `--classic` if
+   the snap uses classic confinement.
 2. Enables linger for the `workshop` user so the systemd user service starts on
    boot.
 3. Writes `/etc/profile.d/openchamber.sh` for PATH access in interactive shells.
