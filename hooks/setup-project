@@ -37,6 +37,9 @@ fi
 # gives us full control over the unit file contents.
 OPENCODE_PORT="2018"
 OPENCHAMBER_PORT="3000"
+# systemd user units do not inherit the opencode SDK dir on PATH, and the
+# openchamber CLI refuses to start without locating the opencode binary.
+OPENCODE_BINARY="/var/lib/workshop/sdk/opencode/bin/opencode"
 UNIT_FILE="$HOME/.config/systemd/user/openchamber.service"
 
 echo "[openchamber] Creating openchamber systemd user unit"
@@ -53,6 +56,7 @@ EnvironmentFile=-/home/workshop/.config/openchamber/startup.env
 Environment=OPENCODE_SKIP_START=1
 Environment=OPENCODE_HOST=127.0.0.1
 Environment=OPENCODE_PORT=${OPENCODE_PORT}
+Environment=OPENCODE_BINARY=${OPENCODE_BINARY}
 ExecStart=/snap/bin/openchamber serve --foreground --port ${OPENCHAMBER_PORT} --lan --ui-password ${PASSWORD}
 WorkingDirectory=/project
 Restart=always

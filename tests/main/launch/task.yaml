@@ -11,6 +11,8 @@ restore: |
 
 
 debug: |
+  workshop exec -- systemctl --user status --no-pager openchamber.service || true
+  workshop exec -- journalctl --user --no-pager -n 100 -u openchamber.service || true
   workshop exec -- systemctl --user status --no-pager openchamber-opencode.service || true
   workshop exec -- journalctl --user --no-pager -n 100 -u openchamber-opencode.service || true
 
@@ -29,7 +31,7 @@ execute: |
   workshop exec -- sudo -u workshop grep -q 'WorkingDirectory=/project' /home/workshop/.config/systemd/user/openchamber.service
 
   echo "==> Verify service listens on 0.0.0.0:3000"
-  workshop exec -- ss -tlnp | grep -q '0.0.0.0:3000'
+  retry -n 20 --wait 1 sh -c "workshop exec -- ss -tlnp | grep -q '0.0.0.0:3000'"
 
   echo "==> Verify memory limits from /project/openchamber-env.sh are applied"
   workshop exec -- bash -c 'printf "OPENCODE_MEM_MAX=1G\nOPENCODE_MEM_HIGH=768M\n" > /project/openchamber-env.sh'
