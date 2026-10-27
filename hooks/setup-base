@@ -99,7 +99,15 @@ install_omo_plugin() {
 OPENCODE_CONFIG_DIR="$HOME/.config/opencode"
 mkdir -p "$OPENCODE_CONFIG_DIR" "$HOME/.omo"
 
-"$OPENCODE_BIN" plugin oh-my-openagent --global
+"$OPENCODE_BIN" plugin oh-my-openagent --global </dev/null
+# `opencode plugin` can report success without registering the plugin; fail
+# loudly instead of leaving a half-configured install.
+if ! grep -qs '"oh-my-openagent"' "$OPENCODE_CONFIG_DIR"/opencode.json*; then
+  echo "[openchamber] ERROR: oh-my-openagent was not added to the global OpenCode config" >&2
+  ls -la "$OPENCODE_CONFIG_DIR" >&2
+  cat "$OPENCODE_CONFIG_DIR"/opencode.json* >&2 || true
+  exit 1
+fi
 
 if [ -f "$PROJECT_OMO_JSON" ]; then
   echo "[openchamber] Using omo configuration from $PROJECT_OMO_JSON"
