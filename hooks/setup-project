@@ -32,6 +32,130 @@ else
   echo '.openchamber-password' > "$GITIGNORE"
 fi
 
+# Install the oh-my-openagent (omo) OpenCode plugin globally for the workshop
+# user. This has to happen here and not in setup-base: ~/.config/opencode is a
+# mount provided by the opencode SDK, which hides anything setup-base writes.
+#   * `opencode plugin --global` adds "oh-my-openagent" to the global OpenCode
+#     config (~/.config/opencode/opencode.jsonc + tui.json) and pre-populates the
+#     plugin package cache, so the first start does not have to download it.
+#   * ~/.config/opencode/omo.json is copied from /project/omo.json when the user
+#     provides one, otherwise the default configuration below is written.
+#   * ~/.omo/omo.jsonc is written only if missing, so user edits and omo's own
+#     migration bookkeeping survive re-runs.
+OPENCODE_BIN="/var/lib/workshop/sdk/opencode/bin/opencode"
+PROJECT_OMO_JSON="/project/omo.json"
+OPENCODE_CONFIG_DIR="$HOME/.config/opencode"
+
+echo "[openchamber] Installing oh-my-openagent plugin globally"
+mkdir -p "$OPENCODE_CONFIG_DIR" "$HOME/.omo"
+
+"$OPENCODE_BIN" plugin oh-my-openagent --global </dev/null
+# `opencode plugin` can report success without registering the plugin; fail
+# loudly instead of leaving a half-configured install.
+if ! grep -qs '"oh-my-openagent"' "$OPENCODE_CONFIG_DIR"/opencode.json*; then
+  echo "[openchamber] ERROR: oh-my-openagent was not added to the global OpenCode config" >&2
+  ls -la "$OPENCODE_CONFIG_DIR" >&2
+  cat "$OPENCODE_CONFIG_DIR"/opencode.json* >&2 || true
+  exit 1
+fi
+
+if [ -f "$PROJECT_OMO_JSON" ]; then
+  echo "[openchamber] Using omo configuration from $PROJECT_OMO_JSON"
+  cp "$PROJECT_OMO_JSON" "$OPENCODE_CONFIG_DIR/omo.json"
+else
+  echo "[openchamber] No $PROJECT_OMO_JSON, writing default omo configuration"
+  cat > "$OPENCODE_CONFIG_DIR/omo.json" <<'OMO_JSON'
+{
+  "model_profile": "openrouter/deepseek/deepseek-v4-pro",
+
+  "agents": {
+    "plan-consultant": {
+      "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b",
+      "reasoning": "max"
+    },
+    "plan-reviewer": {
+      "model": "openrouter/deepseek/deepseek-v4-pro",
+      "reasoning": "max"
+    },
+    "momus": {
+      "model": "openrouter/openai/gpt-6-astra-pro",
+      "reasoning": "max"
+    },
+    "oracle": {
+      "model": "openrouter/openai/gpt-5.6-sol-pro",
+      "reasoning": "max"
+    },
+    "explore": {
+      "model": "openrouter/deepseek/deepseek-v4.1-flash",
+      "reasoning": "off"
+    },
+    "librarian": {
+      "model": "openrouter/deepseek/deepseek-v4.1-flash",
+      "reasoning": "off"
+    }
+  },
+
+  "categories": {
+    "ultrabrain": {
+      "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b",
+      "reasoning": "max"
+    },
+    "deep-high": {
+      "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b",
+      "reasoning": "max"
+    },
+    "deep-low": {
+      "model": "openrouter/deepseek/deepseek-v4.1-flash",
+      "reasoning": "medium"
+    },
+    "visual-engineering": {
+      "model": "openrouter/deepseek/deepseek-v4-pro",
+      "reasoning": "max"
+    },
+    "artistry": {
+      "model": "openrouter/deepseek/deepseek-v4-pro",
+      "reasoning": "max"
+    },
+    "unspecified-high": {
+      "model": "openrouter/deepseek/deepseek-v4-pro",
+      "reasoning": "medium"
+    },
+    "unspecified-low": {
+      "model": "openrouter/deepseek/deepseek-v4.1-flash",
+      "reasoning": "medium"
+    },
+    "writing": {
+      "model": "openrouter/deepseek/deepseek-v4-pro",
+      "reasoning": "low"
+    },
+    "quick": {
+      "model": "openrouter/deepseek/deepseek-v4.1-flash",
+      "reasoning": "off"
+    }
+  }
+}
+OMO_JSON
+fi
+
+if [ ! -e "$HOME/.omo/omo.jsonc" ]; then
+  cat > "$HOME/.omo/omo.jsonc" <<'OMO_JSONC'
+// OMO configuration
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/omo.schema.json",
+  "[opencode]": {
+    "sisyphus_agent": {
+      "default_builder_enabled": false
+    }
+  }
+}
+OMO_JSONC
+fi
+echo "[openchamber] oh-my-openagent plugin installed"
+
+# Restart OpenCode so the running service loads the plugin and omo configuration.
+systemctl --user restart openchamber-opencode.service 2>/dev/null || \
+  systemctl --user start openchamber-opencode.service
+
 # Write the systemd user unit directly instead of calling openchamber startup enable.
 # This avoids a runtime dependency on the openchamber CLI for service creation and
 # gives us full control over the unit file contents.

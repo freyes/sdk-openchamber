@@ -81,6 +81,16 @@ workshop launch workshop.yaml
 4. Installs and starts the `openchamber-opencode.service` systemd user unit
    (`opencode serve` on `127.0.0.1:2018`).
 
+### oh-my-openagent configuration
+
+| File | Content |
+|---|---|
+| `~/.config/opencode/opencode.jsonc` | `oh-my-openagent` added to `plugin` (global install) |
+| `~/.config/opencode/omo.json` | Copy of `/project/omo.json` if it exists, otherwise the SDK's default model/reasoning profile |
+| `~/.omo/omo.jsonc` | Written only if missing; disables the default builder agent (`default_builder_enabled: false`) |
+
+`omo.json` is refreshed from `/project/omo.json` every time `setup-project` runs.
+
 ### OpenCode memory limits
 
 Before each start of `openchamber-opencode.service`, the SDK sources
@@ -106,11 +116,17 @@ Apply changes with `systemctl --user restart openchamber-opencode.service`.
 ### setup-project (runs as workshop user)
 1. Reads or generates a 32-character hex password in `/project/.openchamber-password`.
 2. Adds `.openchamber-password` to `/project/.gitignore` to prevent accidental commits.
-3. Creates `~/.config/systemd/user/openchamber.service` from a template — the service
+3. Installs the [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent)
+   (omo) plugin globally with `opencode plugin oh-my-openagent --global`, writes
+   its configuration (see [oh-my-openagent configuration](#oh-my-openagent-configuration)),
+   and restarts `openchamber-opencode.service` so it loads the plugin. This runs
+   in `setup-project` because `~/.config/opencode` is a mount from the `opencode`
+   SDK that is not available to `setup-base`.
+4. Creates `~/.config/systemd/user/openchamber.service` from a template — the service
    runs `/snap/bin/openchamber serve --foreground --port 3000 --lan` with the
    generated UI password, connects to the OpenCode agent on `127.0.0.1:2018`, and
    loads optional overrides from `/home/workshop/.config/openchamber/startup.env`.
-4. Reloads systemd and restarts the service.
+5. Reloads systemd and restarts the service.
 
 ### check-health (runs as root)
 1. Verifies the `openchamber` binary is on PATH.
