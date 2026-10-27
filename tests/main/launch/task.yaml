@@ -15,6 +15,8 @@ debug: |
   workshop exec -- journalctl --user --no-pager -n 100 -u openchamber.service || true
   workshop exec -- systemctl --user status --no-pager openchamber-opencode.service || true
   workshop exec -- journalctl --user --no-pager -n 100 -u openchamber-opencode.service || true
+  workshop exec -- sudo -u workshop -H bash -c 'ls -la ~/.config/opencode ~/.omo; cat ~/.config/opencode/opencode.jsonc' || true
+  workshop exec -- sudo -u workshop -H bash -c 'tail -n 100 ~/.local/share/opencode/log/*.log' || true
 
 
 execute: |
@@ -46,5 +48,47 @@ execute: |
   workshop exec -- systemctl --user restart openchamber-opencode.service
   workshop exec -- systemctl --user show -p MemoryMax --value openchamber-opencode.service | grep -qx infinity
   workshop exec -- systemctl --user show -p MemoryHigh --value openchamber-opencode.service | grep -qx infinity
+
+  echo "==> Verify oh-my-openagent is installed globally"
+  workshop exec -- sudo -u workshop -H bash -euxc '
+    cfg=~/.config/opencode
+    grep -q "\"oh-my-openagent\"" "$cfg/opencode.jsonc"
+    grep -q "\"oh-my-openagent\"" "$cfg/tui.json"
+    # The plugin package is pre-installed in the OpenCode package cache.
+    test -f ~/.cache/opencode/packages/oh-my-openagent*/node_modules/oh-my-openagent/package.json
+  '
+
+  echo "==> Verify the omo configuration files"
+  workshop exec -- sudo -u workshop -H bash -euxc '
+    test -s ~/.config/opencode/omo.json
+    grep -q "\"model_profile\": \"openrouter/deepseek/deepseek-v4-pro\"" ~/.config/opencode/omo.json
+    grep -q "\"oracle\"" ~/.config/opencode/omo.json
+    grep -q "\"quick\"" ~/.config/opencode/omo.json
+    test -s ~/.omo/omo.jsonc
+    grep -q "default_builder_enabled\": false" ~/.omo/omo.jsonc
+  '
+
+  echo "==> Verify a fresh opencode start loads oh-my-openagent without errors"
+  # OPENCODE_DISABLE_MODELS_FETCH keeps the check independent of models.dev.
+  workshop exec -- sudo -u workshop -H bash -euxc '
+    cd /project
+    export OPENCODE_DISABLE_MODELS_FETCH=1
+    /var/lib/workshop/sdk/opencode/bin/opencode agent list --print-logs --log-level INFO >/tmp/opencode-agent-list.log 2>&1
+    # Agents provided by oh-my-openagent only show up when the plugin loaded.
+    grep -q "^Sisyphus - " /tmp/opencode-agent-list.log
+    grep -q "^Prometheus - " /tmp/opencode-agent-list.log
+    if grep -n "level=ERROR" /tmp/opencode-agent-list.log; then exit 1; fi
+  '
+
+  echo "==> Verify the running opencode service loads oh-my-openagent"
+  workshop exec -- systemctl --user restart openchamber-opencode.service
+  retry -t 60 -d 1 sh -c "workshop exec -- curl -fsS http://127.0.0.1:2018/agent | grep -q Sisyphus"
+  workshop exec -- systemctl --user is-active openchamber-opencode.service
+
+  echo "==> Verify there are no errors in the opencode logs"
+  workshop exec -- sudo -u workshop -H bash -euxc '
+    ls ~/.local/share/opencode/log/*.log
+    if grep -n "level=ERROR" ~/.local/share/opencode/log/*.log; then exit 1; fi
+  '
 
   echo "==> All checks passed"
