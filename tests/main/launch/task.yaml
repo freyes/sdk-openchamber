@@ -41,7 +41,7 @@ execute: |
   workshop exec -- grep -q "ExecStart=/bin/bash -lc 'exec " /etc/systemd/user/openchamber-opencode.service
 
   echo "==> Verify the login shell loads profile scripts into both services"
-  workshop exec -- bash -c 'printf "export SPREAD_PROFILE_MARKER=loaded\n" > /etc/profile.d/z-openchamber-test-marker.sh'
+  workshop exec -- sudo bash -c 'printf "export SPREAD_PROFILE_MARKER=loaded\n" > /etc/profile.d/z-openchamber-test-marker.sh'
   workshop exec -- systemctl --user restart openchamber.service openchamber-opencode.service
   workshop exec -- systemctl --user is-active openchamber.service openchamber-opencode.service
   workshop exec -- bash -c 'pid=$(systemctl --user show -p MainPID --value openchamber.service); test "$pid" -gt 0; tr "\0" "\n" </proc/"$pid"/environ | grep -qx SPREAD_PROFILE_MARKER=loaded'
