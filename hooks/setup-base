@@ -129,6 +129,9 @@ HELPER
 chmod 755 /usr/local/lib/openchamber/opencode-memory-limits
 
 # Install OpenCode systemd user unit (global location for all users).
+# The service runs under a login shell (bash -lc 'exec ...') so /etc/profile
+# and /etc/profile.d/*.sh are loaded into the service environment; `exec`
+# replaces the shell so systemd tracks the real service process.
 echo "[openchamber] Installing opencode systemd user unit"
 
 mkdir -p /etc/systemd/user
@@ -143,7 +146,7 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=/project
 ExecStartPre=-/usr/local/lib/openchamber/opencode-memory-limits
-ExecStart=/var/lib/workshop/sdk/opencode/bin/opencode serve --hostname 127.0.0.1 --port 2018
+ExecStart=/bin/bash -lc 'exec /var/lib/workshop/sdk/opencode/bin/opencode serve --hostname 127.0.0.1 --port 2018'
 Restart=on-failure
 RestartSec=5
 

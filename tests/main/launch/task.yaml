@@ -36,6 +36,17 @@ execute: |
   # The server may still be starting right after launch; retry for up to 30s.
   retry -t 30 -d 1 sh -c "workshop exec -- ss -tlnp | grep -q '0.0.0.0:3000'"
 
+  echo "==> Verify services start via a login shell so all profiles get loaded"
+  workshop exec -- sudo -u workshop grep -q "ExecStart=/bin/bash -lc 'exec " /home/workshop/.config/systemd/user/openchamber.service
+  workshop exec -- grep -q "ExecStart=/bin/bash -lc 'exec " /etc/systemd/user/openchamber-opencode.service
+
+  echo "==> Verify the login shell loads profile scripts into both services"
+  workshop exec -- sudo bash -c 'printf "export SPREAD_PROFILE_MARKER=loaded\n" > /etc/profile.d/z-openchamber-test-marker.sh'
+  workshop exec -- systemctl --user restart openchamber.service openchamber-opencode.service
+  workshop exec -- systemctl --user is-active openchamber.service openchamber-opencode.service
+  workshop exec -- bash -c 'pid=$(systemctl --user show -p MainPID --value openchamber.service); test "$pid" -gt 0; tr "\0" "\n" </proc/"$pid"/environ | grep -qx SPREAD_PROFILE_MARKER=loaded'
+  workshop exec -- bash -c 'pid=$(systemctl --user show -p MainPID --value openchamber-opencode.service); test "$pid" -gt 0; tr "\0" "\n" </proc/"$pid"/environ | grep -qx SPREAD_PROFILE_MARKER=loaded'
+
   echo "==> Verify memory limits from /project/openchamber-env.sh are applied"
   workshop exec -- bash -c 'printf "OPENCODE_MEM_MAX=1G\nOPENCODE_MEM_HIGH=768M\n" > /project/openchamber-env.sh'
   workshop exec -- systemctl --user restart openchamber-opencode.service

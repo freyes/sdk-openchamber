@@ -79,7 +79,9 @@ workshop launch workshop.yaml
    boot.
 3. Writes `/etc/profile.d/openchamber.sh` for PATH access in interactive shells.
 4. Installs and starts the `openchamber-opencode.service` systemd user unit
-   (`opencode serve` on `127.0.0.1:2018`).
+   (`opencode serve` on `127.0.0.1:2018`). The unit starts the command through
+   a login shell (`/bin/bash -lc 'exec …'`) so all profiles (`/etc/profile`,
+   `/etc/profile.d/*.sh`, `~/.profile`) are loaded into the service environment.
 
 ### oh-my-openagent configuration
 
@@ -126,6 +128,9 @@ Apply changes with `systemctl --user restart openchamber-opencode.service`.
    runs `/snap/bin/openchamber serve --foreground --port 3000 --lan` with the
    generated UI password, connects to the OpenCode agent on `127.0.0.1:2018`, and
    loads optional overrides from `/home/workshop/.config/openchamber/startup.env`.
+   The unit starts the command through a login shell (`/bin/bash -lc 'exec …'`)
+   so all profiles (`/etc/profile`, `/etc/profile.d/*.sh`, `~/.profile`) are
+   loaded into the service environment.
 5. Reloads systemd and restarts the service.
 
 ### check-health (runs as root)
